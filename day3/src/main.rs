@@ -56,17 +56,10 @@ fn spiral_distance(number: usize) -> u32 {
     let position = n * n;
     let distance = n - 1;
 
-    println!("=== NUMBER: {}", number);
-    println!("n: {}", n);
-    println!("distance: {}", distance);
-    println!("position: {}", position);
-
     let mut diagonal_offset = (-(NUMBER as isize - position as isize)) as u32 % distance;
     if diagonal_offset > (distance / 2) {
         diagonal_offset = distance - diagonal_offset;
     }
-
-    println!("diagonal_offset: {}", diagonal_offset);
 
     return distance - diagonal_offset;
 }
