@@ -1,0 +1,7 @@
+b inc 5 if a > 1
+a inc 1 if b < 5
+c dec -10 if a >= 1
+c inc -20 if c == 10
+foo inc 100 if c <= 1
+foo dec 50 if a != 2
+foo inc 50 if a != 1
