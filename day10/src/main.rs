@@ -2,17 +2,55 @@ fn main() {
     let input = include_str!("input.txt");
     let sizes: Vec<usize> = input.trim().split(",").map(|x| x.parse().unwrap()).collect::<Vec<_>>();
 
-    let mut collection = (0..256).collect::<Vec<_>>();
+    let collection = (0..256).collect::<Vec<_>>();
+    let hashed_collection = hash(&collection, &sizes, 1);
+    println!("{:?}", hashed_collection[0..2].iter().collect::<Vec<_>>());
 
+    let puzzle_hash = knot_hash(input.trim());
+    println!("{}", puzzle_hash);
+}
+
+
+
+fn knot_hash(input: &str) -> String {
+    let mut sizes = input.as_bytes().iter().map(|x| *x as usize).collect::<Vec<usize>>();
+    sizes.extend([17, 31, 73, 47, 23].iter());
+    
+    let collection = (0..256).collect::<Vec<_>>();
+    let hashed_collection = hash(&collection, &sizes, 64);
+
+    let dense_hash = hashed_collection.chunks(16).map(|block| {
+        block.iter().fold(0, |acc, &x| acc ^ x)
+    }).collect::<Vec<usize>>();
+
+    let dense_hash_hex = dense_hash.iter().map(|x| format!("{:02x}", *x as u8)).collect::<Vec<String>>();
+    dense_hash_hex.join("")
+}
+
+#[test]
+fn test_know_hash() {
+    assert_eq!(knot_hash(""), "a2582a3a0e66e6e86e3812dcb672a272");
+    assert_eq!(knot_hash("AoC 2017"), "33efeb34ea91902bb2f59c9920caa6cd");
+    assert_eq!(knot_hash("1,2,3"), "3efbe78a8d82f29979031a4aa0b16a9d");
+    assert_eq!(knot_hash("1,2,4"), "63960835bcdc130f0b66d7ff4f6a5a8e");
+}
+
+
+
+fn hash(collection: &[usize], sizes: &[usize], rounds: usize) -> Vec<usize> {
     let mut skip = 0;
     let mut index = 0;
-    for size in sizes {
-        collection = reverse_wrapping_subset(&collection, index, size);
-        index = (index + size + skip) % collection.len();
-        skip = skip + 1;
+    let mut current_collection: Vec<usize> = collection.to_vec();
+    
+    for _ in 0..rounds {
+        for &size in sizes {
+            current_collection = reverse_wrapping_subset(&current_collection, index, size);
+            index = (index + size + skip) % current_collection.len();
+            skip = skip + 1;
+        }
     }
 
-    println!("{:?}", collection);
+    current_collection
 }
 
 
