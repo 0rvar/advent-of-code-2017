@@ -1,0 +1,7 @@
+[package]
+name = "day13"
+version = "0.1.0"
+authors = ["Orvar Segerström <orvar.segerstrom@trimma.se>"]
+
+[dependencies]
+regex = "0.2"
