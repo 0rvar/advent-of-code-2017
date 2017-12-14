@@ -1,15 +1,83 @@
+use std::collections::HashMap;
+use std::collections::HashSet;
+
 fn main() {
     let input = "jxqlasbh";
     // let input = "flqrgnkx";
 
-    let mut sum = 0usize;
+    let mut grid: Vec<usize> = Vec::new();
+
     for row in 0..128 {
         let row_input = format!("{}-{}", input, row);
         let row_hash = knot_hash(&row_input);
-        let number_of_ones = row_hash.chars().filter(|&c| c == '1').count();
-        sum += number_of_ones;
+        grid.extend(row_hash.chars().map(|c| match c { '1' => 1, _ => 0 }));
     }
+    
+    let sum = grid.iter().filter(|&&c| c == 1usize).count();
     println!("{}", sum);
+
+    let mut seizures: HashMap<usize, usize> = HashMap::new();
+    let index = |row: usize, column: usize| row * 128 + column;
+    let mut block_counter = 2;
+    loop {
+        let mut changed = false;
+
+        for row in 0..128 {
+            for column in 0..128 {
+                let mut cell_value = grid[index(row, column)];
+                if cell_value == 0 {
+                    continue;
+                }
+                if cell_value == 1 {
+                    cell_value = block_counter;
+                    block_counter += 1;
+                } else if let Some(seized_by) = seizures.get(&cell_value) {
+                    cell_value = *seized_by;
+                }
+                grid[index(row, column)] = cell_value;
+
+                let neighbor_deltas: Vec<(isize, isize)> = vec![
+                    (1, 0),
+                    (0, 1)
+                ];
+                for (delta_row, delta_column) in neighbor_deltas {
+                    let (n_row, n_column) = (
+                        (row as isize + delta_row),
+                        (column as isize + delta_column)
+                    );
+                    if n_row < 0 || n_row >= 128 || n_column < 0 || n_column >= 128 {
+                        continue;
+                    }
+                    let neighbor_index = index(n_row as usize, n_column as usize);
+                    let neighbor_value = grid[neighbor_index];
+                    if neighbor_value == 0 || neighbor_value == cell_value {
+                        continue;
+                    }
+                    if neighbor_value == 1 {
+                        grid[neighbor_index] = cell_value;
+                        changed = true;
+                    } else {
+                        if let None = seizures.get(&neighbor_value) {
+                            seizures.insert(neighbor_value, cell_value);
+                        }
+                        changed = true;
+                    }
+                }
+            }
+        }
+
+        if !changed {
+            break;
+        }
+    }
+
+    let mut block_set = HashSet::new();
+    for x in grid {
+        if x > 0 {
+            block_set.insert(x);
+        }
+    }
+    println!("{} blocks", block_set.len());
 }
 
 
@@ -25,8 +93,17 @@ fn knot_hash(input: &str) -> String {
         block.iter().fold(0, |acc, &x| acc ^ x)
     }).collect::<Vec<usize>>();
 
-    let dense_hash_hex = dense_hash.iter().map(|x| format!("{:04b}", *x as u8)).collect::<Vec<String>>();
-    dense_hash_hex.join("")
+
+    let dense_hash_hex = dense_hash.iter().map(|x| format!("{:02x}", *x as u8)).collect::<Vec<String>>();
+
+    let dense_hash_binary = dense_hash_hex.join("").chars().map(|x: char| {
+        let digit: u8 = u8::from_str_radix(&x.to_string(), 16).unwrap();
+        let binary = format!("{:04b}", digit);
+
+        binary
+    }).collect::<Vec<String>>();
+
+    dense_hash_binary.join("")
 }
 
 
