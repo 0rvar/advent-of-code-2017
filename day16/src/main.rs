@@ -2,6 +2,7 @@
 extern crate nom;
 use nom::{digit, anychar};
 use std::str::from_utf8;
+use std::collections::HashMap;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum DanceMove {
@@ -11,20 +12,58 @@ enum DanceMove {
 }
 
 fn main() {
-    let mut programs: Vec<char> = "abcdefghijklmnop".chars().collect();
+    let original_programs: Vec<char> = "abcdefghijklmnop".chars().collect();
     let input = include_str!("input.txt").trim();
     let moves = parse_moves(input);
 
-    for m in moves {
-        programs = match m {
-            DanceMove::Spin(s) => apply_spin(&programs, s as usize),
-            DanceMove::Exchange(a, b) => apply_exchange(&programs, a as usize, b as usize),
-            DanceMove::Partner(a, b) => apply_partner(&programs, a, b)
+    let mut part1_programs = original_programs.clone();
+    for m in &moves {
+        part1_programs = match m {
+            &DanceMove::Spin(s) => apply_spin(&part1_programs, s as usize),
+            &DanceMove::Exchange(a, b) => apply_exchange(&part1_programs, a as usize, b as usize),
+            &DanceMove::Partner(a, b) => apply_partner(&part1_programs, a, b)
         };
     }
-    
-    let s: String = programs.iter().cloned().collect();
-    println!("{:?}", s);
+
+    println!("{:?}", part1_programs.iter().cloned().collect::<String>());
+
+    let mut programs = original_programs.clone();
+    let mut cycle_map: HashMap<String, usize> = HashMap::new();
+    let mut period = 0;
+    for i in 0.. {
+        let hash = programs_to_string(&programs);
+        if cycle_map.contains_key(&hash) {
+            println!("Found cycle at: {}: {}", i, cycle_map.get(&hash).unwrap());
+            period = i;
+            break;
+        } else {
+            cycle_map.insert(hash, i);
+        }
+
+        for m in &moves {
+            programs = match m {
+                &DanceMove::Spin(s) => apply_spin(&programs, s as usize),
+                &DanceMove::Exchange(a, b) => apply_exchange(&programs, a as usize, b as usize),
+                &DanceMove::Partner(a, b) => apply_partner(&programs, a, b)
+            };
+        }
+    }
+
+    for _ in 0 .. (1_000_000_000 % period) {
+        for m in &moves {
+            programs = match m {
+                &DanceMove::Spin(s) => apply_spin(&programs, s as usize),
+                &DanceMove::Exchange(a, b) => apply_exchange(&programs, a as usize, b as usize),
+                &DanceMove::Partner(a, b) => apply_partner(&programs, a, b)
+            };
+        }
+    }
+
+    println!("{:?}", programs.iter().cloned().collect::<String>());
+}
+
+fn programs_to_string(programs: &[char]) -> String {
+    programs.iter().cloned().collect::<String>()
 }
 
 fn apply_partner(programs: &[char], a: char, b: char) -> Vec<char> {
@@ -130,7 +169,7 @@ named!(parse_exchange <&[u8], (u64, u64)>, do_parse!(
         tag!(b"x") >>
         n: parse_u64_utf8 >>
         tag!(b"/") >>
-        m: parse_u64_utf8 >>      
+        m: parse_u64_utf8 >>
         ((n, m))
 ));
 
