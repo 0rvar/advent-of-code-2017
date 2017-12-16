@@ -15,133 +15,88 @@ fn main() {
     let input = include_str!("input.txt").trim();
     let moves = parse_moves(input);
 
-    for m in &moves {
-        match m {
-            &DanceMove::Spin(s) => apply_spin(&mut programs, s as usize),
-            &DanceMove::Exchange(a, b) => apply_exchange(&mut programs, a as usize, b as usize),
-            &DanceMove::Partner(a, b) => apply_partner(&mut programs, a, b)
+    for m in moves {
+        programs = match m {
+            DanceMove::Spin(s) => apply_spin(&programs, s as usize),
+            DanceMove::Exchange(a, b) => apply_exchange(&programs, a as usize, b as usize),
+            DanceMove::Partner(a, b) => apply_partner(&programs, a, b)
         };
     }
     
     let s: String = programs.iter().cloned().collect();
     println!("{:?}", s);
-
-    for i in 0..1_000_000_000 {
-        for m in &moves {
-            match m {
-                &DanceMove::Spin(s) => apply_spin(&mut programs, s as usize),
-                &DanceMove::Exchange(a, b) => apply_exchange(&mut programs, a as usize, b as usize),
-                &DanceMove::Partner(a, b) => apply_partner(&mut programs, a, b)
-            };
-        }
-        if i % 10_000 == 0 {
-            println!("{}%", i as f64 * 100.0 / 1_000_000_000.0);
-        }
-    }
-
-    let s: String = programs.iter().cloned().collect();
-    println!("{:?}", s);
 }
 
-fn apply_partner(programs: &mut [char], a: char, b: char) {
+fn apply_partner(programs: &[char], a: char, b: char) -> Vec<char> {
     let a_index = programs.iter().position(|&x| x == a).unwrap();
     let b_index = programs.iter().position(|&x| x == b).unwrap();
-    let a_value = programs[a_index];
-    let b_value = programs[b_index];
+    let left_index = if a_index < b_index { a_index } else { b_index };
+    let right_index = if a_index > b_index { a_index } else { b_index };
+    let left_value = programs[left_index];
+    let right_value = programs[right_index];
 
-    programs[a_index] = b_value;
-    programs[b_index] = a_value;
+    let (mut left, mut middle, mut right) = (
+        programs[0 .. left_index].to_vec(),
+        programs[left_index + 1 .. right_index].to_vec(),
+        programs[right_index + 1 ..].to_vec()
+    );
+    left.push(right_value);
+    left.append(&mut middle);
+    left.push(left_value);
+    left.append(&mut right);
+    left
 }
 
 #[test]
 fn test_apply_partner() {
     let p = |s: &str| s.chars().collect::<Vec<_>>();
-    {
-        let mut ps = p("eabdc");
-        apply_partner(&mut ps, 'e', 'b');
-        assert_eq!(ps, p("baedc"));
-    }
-    {
-        let mut ps = p("abcde");
-        apply_partner(&mut ps, 'c', 'a');
-        assert_eq!(ps, p("cbade"));
-    }
-    {
-        let mut ps = p("abcde");
-        apply_partner(&mut ps, 'a', 'b');
-        assert_eq!(ps, p("bacde"));
-    }
+    assert_eq!(apply_partner(&p("eabdc"), 'e', 'b'), p("baedc"));
+    assert_eq!(apply_partner(&p("abcde"), 'c', 'a'), p("cbade"));
+    assert_eq!(apply_partner(&p("abcde"), 'a', 'b'), p("bacde"));
 }
 
-fn apply_exchange(programs: &mut [char], a: usize, b: usize) {
-    let a_value = programs[a];
-    let b_value = programs[b];
+fn apply_exchange(programs: &[char], a: usize, b: usize) -> Vec<char> {
+    let left_index = if a < b { a } else { b };
+    let right_index = if a > b { a } else { b };
+    let left_value = programs[left_index];
+    let right_value = programs[right_index];
 
-    programs[a] = b_value;
-    programs[b] = a_value;
+    let (mut left, mut middle, mut right) = (
+        programs[0 .. left_index].to_vec(),
+        programs[left_index + 1 .. right_index].to_vec(),
+        programs[right_index + 1 ..].to_vec()
+    );
+    left.push(right_value);
+    left.append(&mut middle);
+    left.push(left_value);
+    left.append(&mut right);
+    left
 }
 
 #[test]
 fn test_apply_exchange() {
     let p = |s: &str| s.chars().collect::<Vec<_>>();
-    {
-        let mut ps = p("eabcd");
-        apply_exchange(&mut ps, 3, 4);
-        assert_eq!(ps, p("eabdc"));
-    }
-    {
-        let mut ps = p("abcde");
-        apply_exchange(&mut ps, 0, 4);
-        assert_eq!(ps, p("ebcda"));
-    }
-    {
-        let mut ps = p("abcde");
-        apply_exchange(&mut ps, 1, 0);
-        assert_eq!(ps, p("bacde"));
-    }
+    assert_eq!(apply_exchange(&p("eabcd"), 3, 4), p("eabdc"));
+    assert_eq!(apply_exchange(&p("abcde"), 0, 4), p("ebcda"));
+    assert_eq!(apply_exchange(&p("abcde"), 1, 0), p("bacde"));
 }
 
-fn apply_spin(programs: &mut [char], index: usize) {
+fn apply_spin(programs: &[char], index: usize) -> Vec<char> {
     let split_index = programs.len() - index;
+    let (mut left, mut right) = (programs[0..split_index].to_vec(), programs[split_index ..].to_vec());
 
-    let tail_copy = programs[split_index..].to_vec();
-
-    for i in (0 .. programs.len() - index).rev() {
-        programs[i + index] = programs[i];
-    }
-    for i in 0 .. index {
-        programs[i] = tail_copy[i];
-    }
+    right.append(&mut left);
+    right
 }
 
 #[test]
 fn test_apply_spin() {
     let p = |s: &str| s.chars().collect::<Vec<_>>();
-    {
-        let mut ps = p("abcde");
-        apply_spin(&mut ps, 1);
-        assert_eq!(ps, p("eabcd"));
-    }
-    {
-        let mut ps = p("abcde");
-        apply_spin(&mut ps, 2);
-        assert_eq!(ps, p("deabc"));
-    }
-    {
-        let mut ps = p("abcde");
-        apply_spin(&mut ps, 3);
-        assert_eq!(ps, p("cdeab"));
-    }
-    {
-        let mut ps = p("abcde");
-        apply_spin(&mut ps, 4);
-        assert_eq!(ps, p("bcdea"));
-    }
-    {
-        let mut ps = p("abcde");
-        apply_spin(&mut ps, 5);
-        assert_eq!(ps, p("abcde"));
-    }
+    assert_eq!(apply_spin(&p("abcde"), 1), p("eabcd"));
+    assert_eq!(apply_spin(&p("abcde"), 2), p("deabc"));
+    assert_eq!(apply_spin(&p("abcde"), 3), p("cdeab"));
+    assert_eq!(apply_spin(&p("abcde"), 4), p("bcdea"));
+    assert_eq!(apply_spin(&p("abcde"), 5), p("abcde"));
 }
 
 
