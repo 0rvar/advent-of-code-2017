@@ -1,0 +1,11 @@
+[package]
+name = "day16"
+version = "0.1.0"
+authors = ["Orvar Segerström <orvarsegerstrom@gmail.com>"]
+
+[dependencies]
+regex = "0.2"
+
+[dependencies.nom]
+version = "^3.2"
+features = ["regexp", "nightly", "verbose-errors"]
