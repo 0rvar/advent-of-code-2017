@@ -34,6 +34,7 @@ fn main() {
     );
     let mut current_direction = Direction::S;
     let mut letters: Vec<char> = vec![];
+    let mut num_steps = 0;
 
     loop {
         let current_entity = map.get(&current_position).unwrap_or_else(|| &Entity::None);
@@ -41,6 +42,7 @@ fn main() {
         match current_entity {
             &Entity::Horizontal | &Entity::Vertical => {
                 current_position = move_in_direction(&current_position, &current_direction);
+                num_steps += 1;
             },
             &Entity::Junction => {
                 let options = vec![
@@ -63,10 +65,12 @@ fn main() {
                     .expect(&format!("Should have path at {:?} going {:?}", current_position, current_direction));
                 current_direction = new_direction.clone();
                 current_position = move_in_direction(&current_position, &current_direction);
+                num_steps += 1;
             },
             &Entity::Letter(c) => {
                 letters.push(c);
                 current_position = move_in_direction(&current_position, &current_direction);
+                num_steps += 1;
             },
             &Entity::None => {
                 break;
@@ -75,6 +79,7 @@ fn main() {
     }
 
     println!("Seen letters: {}", letters.iter().collect::<String>());
+    println!("Num steps: {}", num_steps);
 }
 
 fn opposite_direction(dir: &Direction) -> Direction {
