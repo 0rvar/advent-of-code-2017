@@ -12,7 +12,19 @@ fn main() {
         })
         .collect::<Vec<Component>>();
 
-    println!("{}", strongest_bridge_strength(&components));
+    println!("Part 1: {}", strongest_bridge_strength(&components));
+    println!("Part 2: {}", strongest_longest_bridge_strength(&components));
+}
+
+fn strongest_longest_bridge_strength(components: &[Component]) -> usize {
+    let permutations = component_permutations(components);
+    let max_length = permutations.iter().map(|x| x.len()).max().unwrap();
+    permutations
+        .iter()
+        .filter(|x| x.len() == max_length)
+        .map(|x| bridge_strength(&x))
+        .max()
+        .expect("wat")
 }
 
 fn strongest_bridge_strength(components: &[Component]) -> usize {
