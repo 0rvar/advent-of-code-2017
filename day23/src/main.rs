@@ -1,7 +1,15 @@
+use is_prime::*;
 use std::collections::HashMap;
 
 fn main() {
-    let instructions = include_str!("input.txt").trim().lines().collect::<Vec<_>>();
+    let instructions = include_str!("input.txt")
+        .trim()
+        .lines()
+        .filter(|x| {
+            let trimmed = x.trim();
+            trimmed.len() > 0 && !trimmed.starts_with("#")
+        })
+        .collect::<Vec<&str>>();
 
     // set X Y sets register X to the value of Y.
     // sub X Y decreases register X by the value of Y.
@@ -14,7 +22,6 @@ fn main() {
 
         while instruction_pointer < instructions.len() {
             let instruction = instructions[instruction_pointer];
-            println!("{}: {}", instruction_pointer, instruction);
             let parts = instruction.split(' ').collect::<Vec<_>>();
             let op = parts[0];
 
@@ -47,6 +54,20 @@ fn main() {
         }
         println!("Part 1: {} mul invocations", mul_instruction_invocations);
     }
+
+    println!("Part 2: final h = {}", program_ported());
+}
+
+fn program_ported() -> isize {
+    let initial_b = 81 * 100 + 100_000;
+    let max_b = initial_b + 17_000;
+    let mut h = 0;
+    for b in (initial_b..(max_b + 1)).step_by(17) {
+        if !is_prime(&b.to_string()) {
+            h = h + 1;
+        }
+    }
+    h
 }
 
 fn apply(
